@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Credit Card Event UI</title>
+    </head>
+    <style>
+        body {
+            background-image: url("https://raw.githubusercontent.com/ahsanazim/slack-landing-page/master/screen_caps/main_background.jpg");
+            background-repeat: no-repeat;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f7f7;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.9)
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        select {
+            display: block;
+            margin-bottom: 5px;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        input[type="text"],
+        input[type="number"] {
+            width: 96%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: rgba(0, 0, 0, 0.3);
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            align-items: center;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        table, div {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        th, td {
+            text-align: left;
+            padding: 8px;
+        }
+        th {
+            margin-left: 30%;
+            color: rgba(255, 255, 255, 0.8);
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+        .response-container {
+            margin-top: 20px;
+        }
+    </style>
+    <body>
+        <div class="container">
+            <div class="form-group">
+                <label for="availableCredit">Available Credit:</label>
+                <input type="number" id="availableCredit" placeholder="Enter available credit">
+                <button onclick="resetCredit()">Reset</button>
+            </div>
+
+            <div class="form-group">
+                <label for="eventType">Event Type:</label>
+                <select id="eventType">
+                    <option value="TXN_AUTHED">TXN_AUTHED</option>
+                    <option value="TXN_SETTLED">TXN_SETTLED</option>
+                    <option value="TXN_AUTH_CLEARED">TXN_AUTH_CLEARED</option>
+                    <option value="PAYMENT_INITIATED">PAYMENT_INITIATED</option>
+                    <option value="PAYMENT_POSTED">PAYMENT_POSTED</option>
+                    <option value="PAYMENT_CANCELED">PAYMENT_CANCELED</option>
+                </select>
+                
+                <label for="eventTime">Event Time:</label>
+                <input type="number" id="eventTime" placeholder="Enter event time">
+                
+                <label for="txnId">Transaction ID:</label>
+                <input type="text" id="txnId" placeholder="Enter transaction ID">
+                
+                <label for="amount">Amount:</label>
+                <input type="number" id="amount" placeholder="Enter amount">
+                
+                <button onclick="createCustomEvent()">Create Event</button>
+            </div>
+
+            <div class="form-group">
+                <button onclick="getStatus()">Get Status</button>
+            </div>
+
+            <div class="response-container" id="responseContainer"></div>
+        </div>
+
+        <script>
+        function resetCredit() {
+            const availableCredit = document.getElementById('availableCredit').value;
+            console.log(availableCredit)
+            fetch('http://localhost:8000/reset', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ available_credit: availableCredit }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Credit reset successful');
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        function createCustomEvent() {
+            const eventType = document.getElementById('eventType').value;
+            const eventTime = document.getElementById('eventTime').value;
+            const txnId = document.getElementById('txnId').value;
+            const amount = document.getElementById('amount').value;
+
+            fetch('http://localhost:8000/event', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    eventType: eventType,
+                    eventTime: eventTime,
+                    txnId: txnId,
+                    amount: amount
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Event created successfully');
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        function getStatus() {
+            fetch('http://localhost:8000/summary')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('responseContainer');
+                let transactionsHTML = '';
+
+                // Create HTML for Pending Transactions
+                let pendingTransactionsHTML = Object.keys(data['Pending transactions']).map(txnId => {
+                    const txn = data['Pending transactions'][txnId];
+                    return `<tr>
+                                <td>${txnId}: $${txn.amount} @ time ${txn.eventTime}</td>
+                                <td></td> <!-- Empty cell for the settled transactions column -->
+                            </tr>`;
+                }).join('');
+
+                // Create HTML for Settled Transactions
+                let settledTransactionsHTML = Object.keys(data['Settled transactions']).map(txnId => {
+                    const txn = data['Settled transactions'][txnId];
+                    const finalTime = data['Final times'][txnId];
+                    return `<tr>
+                                <td></td> <!-- Empty cell for the pending transactions column -->
+                                <td>${txnId}: $${txn.amount} @ time ${txn.eventTime} (finalized @ time ${finalTime})</td>
+                            </tr>`;
+                }).join('');
+
+                // Combine the HTML for pending and settled transactions
+                transactionsHTML = pendingTransactionsHTML + settledTransactionsHTML;
+
+                // If there are no transactions, display a message
+                if (!pendingTransactionsHTML && !settledTransactionsHTML) {
+                    transactionsHTML = '<tr><td colspan="2">No transactions available</td></tr>';
+                }
+
+                // Update the HTML content
+                container.innerHTML = `
+                    <div>Available credit: $${data['Available credit']}</div>
+                    <div>Payable balance: $${data['Payable balance']}</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pending Transactions</th>
+                                <th>Settled Transactions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${transactionsHTML}
+                        </tbody>
+                    </table>
+                `;
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+
+
+
+
+        </script>
+    </body>
+</html>
