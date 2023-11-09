@@ -2,6 +2,8 @@ Rishi Gulati
 
 Degree: Master's in Computer Science 
 Institute: University of Illinois, Urbana-Champaign
+CGPA: 4.0/4.0
+
 Experience: 3+ years as a SWE
 
 Contact details:
