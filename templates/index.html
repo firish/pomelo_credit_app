@@ -177,7 +177,6 @@
                 const container = document.getElementById('responseContainer');
                 let transactionsHTML = '';
 
-                // Create HTML for Pending Transactions
                 let pendingTransactionsHTML = Object.keys(data['Pending transactions']).map(txnId => {
                     const txn = data['Pending transactions'][txnId];
                     return `<tr>
@@ -186,7 +185,6 @@
                             </tr>`;
                 }).join('');
 
-                // Create HTML for Settled Transactions
                 let settledTransactionsHTML = Object.keys(data['Settled transactions']).map(txnId => {
                     const txn = data['Settled transactions'][txnId];
                     const finalTime = data['Final times'][txnId];
@@ -196,15 +194,11 @@
                             </tr>`;
                 }).join('');
 
-                // Combine the HTML for pending and settled transactions
                 transactionsHTML = pendingTransactionsHTML + settledTransactionsHTML;
 
-                // If there are no transactions, display a message
                 if (!pendingTransactionsHTML && !settledTransactionsHTML) {
                     transactionsHTML = '<tr><td colspan="2">No transactions available</td></tr>';
                 }
-
-                // Update the HTML content
                 container.innerHTML = `
                     <div>Available credit: $${data['Available credit']}</div>
                     <div>Payable balance: $${data['Payable balance']}</div>
@@ -225,11 +219,6 @@
                 console.error('Error:', error);
             });
         }
-
-
-
-
-
         </script>
     </body>
 </html>
